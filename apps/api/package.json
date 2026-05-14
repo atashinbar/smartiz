@@ -1,0 +1,21 @@
+{
+  "name": "@smartiz/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "preview": "node dist/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1",
+    "hono": "^4"
+  },
+  "devDependencies": {
+    "@smartiz/typescript-config": "workspace:*",
+    "@types/node": "^22",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
