@@ -1,0 +1,15 @@
+name = "smartiz-api"
+main = "src/entry-workers.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+STORAGE_PROVIDER = "r2"
+OTP_PROVIDER = "mock"
+NODE_ENV = "production"
+CORS_ORIGINS = "*"
+
+# Uncomment and configure after creating a Hyperdrive config:
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "<your-hyperdrive-id>"

@@ -1,16 +1,22 @@
 import { Hono } from "hono";
-import { serve } from "@hono/node-server";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import type { EnvConfig } from "@smartiz/shared";
+import type { AppVariables } from "./middleware/env.js";
+import { createEnvMiddleware } from "./middleware/env.js";
+import { errorHandler } from "./middleware/error.js";
+import { healthRoutes } from "./routes/health.js";
 
-const app = new Hono();
+export function createApp(env: EnvConfig) {
+  const app = new Hono<{ Variables: AppVariables }>();
 
-app.get("/", (c) => {
-  return c.json({ status: "ok", message: "Smartiz API" });
-});
+  app.use("*", logger());
+  app.use("*", cors({ origin: env.CORS_ORIGINS.split(","), allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"] }));
+  app.use("*", createEnvMiddleware(env));
 
-app.get("/api/health", (c) => {
-  return c.json({ status: "healthy", timestamp: new Date().toISOString() });
-});
+  app.route("/api", healthRoutes);
 
-serve({ fetch: app.fetch, port: 8585 }, (info) => {
-  console.log(`API server running at http://localhost:${info.port}`);
-});
+  app.onError(errorHandler);
+
+  return app;
+}
