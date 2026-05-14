@@ -4,18 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/entry-node.ts",
+    "dev:workers": "wrangler dev",
     "build": "tsc",
-    "preview": "node dist/index.js"
+    "preview": "node dist/entry-node.js",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@hono/node-server": "^1",
+    "@smartiz/auth": "workspace:*",
+    "@smartiz/db": "workspace:*",
+    "@smartiz/shared": "workspace:*",
+    "@smartiz/storage": "workspace:*",
+    "dotenv": "^16",
     "hono": "^4"
   },
   "devDependencies": {
     "@smartiz/typescript-config": "workspace:*",
     "@types/node": "^22",
     "tsx": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4"
   }
 }
