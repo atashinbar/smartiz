@@ -1,0 +1,10 @@
+{
+  "name": "@smartiz/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "index.js",
+  "devDependencies": {
+    "eslint": "^9"
+  }
+}
