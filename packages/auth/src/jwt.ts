@@ -6,11 +6,11 @@ export interface TokenPayload {
   userType: UserType | AdminRole;
 }
 
-export async function signToken(payload: TokenPayload, secret: string): Promise<string> {
+export async function signToken(payload: TokenPayload, secret: string, expiresIn = "30d"): Promise<string> {
   const key = new TextEncoder().encode(secret);
   return new SignJWT({ id: payload.id, userType: payload.userType })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("30d")
+    .setExpirationTime(expiresIn)
     .setIssuedAt()
     .sign(key);
 }

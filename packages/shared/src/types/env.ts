@@ -18,6 +18,7 @@ export interface EnvConfig {
 
   // Auth
   JWT_SECRET: string;
+  JWT_EXPIRES_IN?: string;
   OTP_PROVIDER: "mock" | "meli-payamak";
   MELI_PAYAMAK_API_KEY?: string;
   MELI_PAYAMAK_USERNAME?: string;
