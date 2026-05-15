@@ -103,8 +103,9 @@ When modifying the database schema, ALWAYS follow these steps in order:
 5. **Review migration** — Check the generated SQL in `packages/db/drizzle/` before applying
 6. **Apply migration** — Run `pnpm db:migrate`
 7. **Verify** — Run `pnpm db:studio` to verify tables and data are correct
+8. **Commit together** — Always commit the migration files (`packages/db/drizzle/`) in the SAME commit as the schema changes. Other developers run `pnpm db:migrate` to get your tables.
 
-**IMPORTANT**: Never apply migrations without generating them first. Never apply migrations without a backup.
+**IMPORTANT**: Never apply migrations without generating them first. Never apply migrations without a backup. Never commit schema changes without committing the generated migration files alongside them.
 
 ### SQLite to PostgreSQL Conversion Reference
 When porting tables from old project:
