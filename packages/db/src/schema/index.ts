@@ -1,2 +1,2 @@
-export { users } from "./users.js";
-export { admins } from "./admins.js";
+export { users } from "./users";
+export { admins } from "./admins";
