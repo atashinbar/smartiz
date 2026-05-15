@@ -151,6 +151,7 @@ When porting tables from old project:
 - Add `.js` extension in imports for ESM compatibility (e.g., `"./schema/index.js"`)
 - No comments unless the WHY is non-obvious
 - No unnecessary abstractions — three similar lines is better than a premature one
+- Always use `pnpm` for installing packages. Never use `npm` or `yarn`.
 
 ## Commit Rules
 
