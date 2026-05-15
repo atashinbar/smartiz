@@ -11,7 +11,7 @@ export const admins = pgTable(
   "admins",
   {
     id: serial().primaryKey(),
-    email: text().notNull(),
+    email: text().notNull().unique(),
     password: text().notNull(),
     name: text(),
     isActive: integer("is_active").default(1).notNull(),
