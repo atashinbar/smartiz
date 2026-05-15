@@ -9,6 +9,9 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
     "preview": {
       "dependsOn": ["build"],
       "cache": false,

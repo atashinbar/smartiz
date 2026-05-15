@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: smartiz-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: smartiz
+      POSTGRES_PASSWORD: smartiz
+      POSTGRES_DB: smartiz
+    volumes:
+      - smartiz-pgdata:/var/lib/postgresql/data
+
+volumes:
+  smartiz-pgdata:

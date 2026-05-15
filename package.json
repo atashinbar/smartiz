@@ -7,9 +7,15 @@
     "preview": "turbo preview",
     "db:generate": "pnpm --filter @smartiz/db db:generate",
     "db:migrate": "pnpm --filter @smartiz/db db:migrate",
-    "db:studio": "pnpm --filter @smartiz/db db:studio"
+    "db:studio": "pnpm --filter @smartiz/db db:studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v && docker compose up -d",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
     "turbo": "^2",
     "typescript": "^5"
   },
