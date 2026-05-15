@@ -1,8 +1,10 @@
 {
   "extends": "@smartiz/typescript-config/base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "noEmit": true
   },
   "include": ["src"]
 }

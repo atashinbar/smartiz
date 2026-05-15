@@ -152,6 +152,25 @@ When porting tables from old project:
 - No comments unless the WHY is non-obvious
 - No unnecessary abstractions — three similar lines is better than a premature one
 
+## Commit Rules
+
+**ALWAYS run type checking before committing.** A pre-commit hook enforces this automatically — commits will be blocked if there are TypeScript errors.
+
+Before committing, run:
+```bash
+pnpm turbo check-types
+```
+
+This runs `tsc --noEmit` across all packages in the monorepo. Fix any errors before committing.
+
+The pre-push hook also blocks direct pushes to `main` — always work on feature branches.
+
+**Workflow:**
+1. Make changes
+2. Run `pnpm turbo check-types` — fix any errors
+3. Commit — the hook will verify types automatically
+4. Push and create PR
+
 ## Adding New Tables
 
 1. Create `packages/db/src/schema/<table-name>.ts` using `pgTable` from `drizzle-orm/pg-core`

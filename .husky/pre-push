@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+
+if [ "$branch" = "main" ]; then
+  echo "Direct push to main branch is not allowed." >&2
+  echo "Please create a new branch for your work using:" >&2
+  echo "  git checkout -b feature/your-feature-name" >&2
+  exit 1
+fi
