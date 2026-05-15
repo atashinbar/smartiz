@@ -9,7 +9,8 @@ CREATE TABLE "admins" (
 	"login_attempts" integer DEFAULT 0 NOT NULL,
 	"lockout_until" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "admins_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -18,7 +19,7 @@ CREATE TABLE "users" (
 	"name" text,
 	"surname" text,
 	"national_id" text,
-	"birth_date" text,
+	"birth_date" date,
 	"email" text,
 	"user_type" text DEFAULT 'student' NOT NULL,
 	"is_active" integer DEFAULT 1 NOT NULL,
@@ -31,11 +32,12 @@ CREATE TABLE "users" (
 	"is_verified" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"credit" double precision,
+	"credit" numeric(12, 2),
 	"bank_account_number" text,
 	"bank_sheba_number" text,
 	"bank_card_number" text,
-	"coin_balance" integer DEFAULT 0 NOT NULL
+	"coin_balance" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "users_phone_unique" UNIQUE("phone")
 );
 --> statement-breakpoint
 ALTER TABLE "users" ADD CONSTRAINT "users_parent_id_users_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
