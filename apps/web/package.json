@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@smartiz/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
