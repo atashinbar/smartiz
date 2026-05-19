@@ -1,2 +1,6 @@
 @import "tailwindcss";
 @import "@smartiz/ui/styles.css";
+
+@theme {
+  --font-sans: "Vazirmatn", system-ui, sans-serif;
+}

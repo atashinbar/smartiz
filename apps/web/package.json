@@ -10,13 +10,18 @@
     "preview": "vite preview --port 9090"
   },
   "dependencies": {
+    "@smartiz/shared": "workspace:*",
     "@smartiz/ui": "workspace:*",
+    "@tanstack/react-query": "^5.100.10",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "react-router-dom": "^7.15.1",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@smartiz/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.0",
+    "@tanstack/react-query-devtools": "^5.100.10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
@@ -24,6 +29,8 @@
     "postcss": "^8",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vite": "^6"
+    "vite": "^6",
+    "vite-plugin-pwa": "^1.3.0",
+    "workbox-window": "^7.4.1"
   }
 }

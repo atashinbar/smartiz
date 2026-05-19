@@ -1,7 +1,8 @@
-import { StatusDashboard } from "./status";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./router.js";
 
 function App() {
-  return <StatusDashboard />;
+  return <RouterProvider router={router} />;
 }
 
 export default App;
