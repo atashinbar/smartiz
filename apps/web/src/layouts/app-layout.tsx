@@ -4,16 +4,9 @@ import { Sidebar } from "../components/sidebar.js";
 import { BottomTabBar } from "../components/bottom-tab-bar.js";
 import { OfflineBanner } from "../components/offline-banner.js";
 import { PWAInstallPrompt } from "../components/pwa-install-prompt.js";
-import { useNetworkStore } from "../stores/network.js";
-import { OfflinePage } from "../pages/offline.js";
+import { PWAUpdateNotification } from "../components/pwa-update-notification.js";
 
 export function AppLayout() {
-  const isOnline = useNetworkStore((s) => s.isOnline);
-
-  if (!isOnline) {
-    return <OfflinePage />;
-  }
-
   return (
     <div className="min-h-screen bg-background font-sans">
       <OfflineBanner />
@@ -28,6 +21,7 @@ export function AppLayout() {
       </div>
       <BottomTabBar />
       <PWAInstallPrompt />
+      <PWAUpdateNotification />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { usePWA } from "../providers/pwa-provider.js";
 
 interface ServiceStatus {
   status: "healthy" | "unhealthy";
@@ -41,17 +41,7 @@ export function StatusDropdown() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
-
-  const {
-    needRefresh: [needRefresh],
-    offlineReady: [offlineReady],
-  } = useRegisterSW({
-    onRegisteredSW(_swUrl, registration) {
-      if (registration) {
-        setInterval(() => registration.update(), 60 * 60 * 1000);
-      }
-    },
-  });
+  const { needRefresh, offlineReady } = usePWA();
 
   const swState = needRefresh
     ? "update_available" as const
