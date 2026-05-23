@@ -2606,6 +2606,8 @@ export function StatusDropdown() {
 
 ### apps/admin
 
+Uses **Ant Design v5** with built-in RTL support and Persian locale. No Tailwind or PostCSS needed — Ant Design uses CSS-in-JS.
+
 --- FILE: apps/admin/package.json ---
 ```json
 {
@@ -2620,18 +2622,19 @@ export function StatusDropdown() {
     "preview": "vite preview --port {{PORT_ADMIN}}"
   },
   "dependencies": {
-    "@{{SCOPE}}/ui": "workspace:*",
+    "@ant-design/icons": "^5.6.1",
+    "@{{SCOPE}}/shared": "workspace:*",
+    "@tanstack/react-query": "^5.100.10",
+    "antd": "^5.24.6",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "react-router-dom": "^7.15.1"
   },
   "devDependencies": {
     "@{{SCOPE}}/typescript-config": "workspace:*",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
-    "autoprefixer": "^10",
-    "postcss": "^8",
-    "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^6"
   }
@@ -2664,26 +2667,32 @@ export default defineConfig({
 });
 ```
 
---- FILE: apps/admin/postcss.config.js ---
-```javascript
-export default {
-  plugins: {
-    "@tailwindcss/postcss": {},
-  },
-};
-```
-
 --- FILE: apps/admin/index.html ---
 ```html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{PROJECT_TITLE}} Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      #splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#fff;font-family:system-ui,sans-serif;transition:opacity .3s}
+      #splash .spinner{width:32px;height:32px;border:3px solid #1d4ed8;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="splash">
+        <div style="text-align:center">
+          <h2 style="color:#1d4ed8;margin-bottom:16px;font-size:20px">{{PROJECT_TITLE}} Admin</h2>
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
@@ -2694,45 +2703,614 @@ export default {
 /// <reference types="vite/client" />
 ```
 
---- FILE: apps/admin/src/index.css ---
-```css
-@import "tailwindcss";
-@import "@{{SCOPE}}/ui/styles.css";
+--- FILE: apps/admin/src/theme.ts ---
+```typescript
+import type { ThemeConfig } from "antd";
+import faIR from "antd/locale/fa_IR";
+
+export const antLocale = faIR;
+export const themeConfig: ThemeConfig = {
+  token: {
+    fontFamily: '"Vazirmatn", system-ui, sans-serif',
+    colorPrimary: "#1d4ed8",
+    borderRadius: 6,
+  },
+};
 ```
 
 --- FILE: apps/admin/src/main.tsx ---
 ```typescript
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ConfigProvider, App as AntApp } from "antd";
+import { queryClient } from "./lib/query-client.js";
+import { antLocale, themeConfig } from "./theme.js";
+import App from "./App.js";
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!);
+root.render(
   <StrictMode>
-    <App />
-  </StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ConfigProvider direction="rtl" locale={antLocale} theme={themeConfig}>
+        <AntApp>
+          <App />
+        </AntApp>
+      </ConfigProvider>
+    </QueryClientProvider>
+  </StrictMode>,
 );
+
+requestAnimationFrame(() => {
+  const splash = document.getElementById("splash");
+  if (splash) {
+    splash.style.opacity = "0";
+    setTimeout(() => splash.remove(), 300);
+  }
+});
 ```
 
 --- FILE: apps/admin/src/App.tsx ---
 ```typescript
-import { Button } from "@{{SCOPE}}/ui";
+import { useMemo } from "react";
+import { RouterProvider } from "react-router-dom";
+import { AuthProvider, useAuth } from "./hooks/use-auth.js";
+import { createAppRouter } from "./router.js";
+
+function AppWithAuth() {
+  const { token } = useAuth();
+  const router = useMemo(() => createAppRouter(!!token), [token]);
+  return <RouterProvider router={router} />;
+}
 
 function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-foreground">{{PROJECT_TITLE}} Admin</h1>
-        <p className="text-muted-foreground">Admin Panel</p>
-        <div className="space-x-2">
-          <Button>Login</Button>
-        </div>
-      </div>
-    </div>
+    <AuthProvider>
+      <AppWithAuth />
+    </AuthProvider>
   );
 }
 
 export default App;
+```
+
+--- FILE: apps/admin/src/router.tsx ---
+```typescript
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { AuthLayout } from "./layouts/auth-layout.js";
+import { AdminLayout } from "./layouts/admin-layout.js";
+import { LoginPage } from "./pages/login.js";
+import { DashboardPage } from "./pages/dashboard.js";
+import { AdminsPage } from "./pages/admins.js";
+
+export function createAppRouter(isAuthenticated: boolean) {
+  return createBrowserRouter([
+    {
+      path: "/login",
+      element: isAuthenticated ? <Navigate to="/" replace /> : <AuthLayout />,
+      children: [{ index: true, element: <LoginPage /> }],
+    },
+    {
+      element: isAuthenticated ? <AdminLayout /> : <Navigate to="/login" replace />,
+      children: [
+        { index: true, element: <DashboardPage /> },
+        { path: "admins", element: <AdminsPage /> },
+      ],
+    },
+  ]);
+}
+```
+
+--- FILE: apps/admin/src/lib/query-client.ts ---
+```typescript
+import { QueryClient } from "@tanstack/react-query";
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30_000, retry: 1 },
+  },
+});
+```
+
+--- FILE: apps/admin/src/hooks/use-auth.tsx ---
+```typescript
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+
+interface AdminData {
+  id: number;
+  email: string;
+  name: string | null;
+  role: string;
+  lastLogin: string | null;
+}
+
+interface AuthContextValue {
+  admin: AdminData | null;
+  token: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+const TOKEN_KEY = "{{SCOPE}}_admin_token";
+const ADMIN_KEY = "{{SCOPE}}_admin_data";
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [admin, setAdmin] = useState<AdminData | null>(() => {
+    const stored = localStorage.getItem(ADMIN_KEY);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  });
+
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Login failed");
+
+    const { token: jwt, admin: adminData } = data.data;
+    localStorage.setItem(TOKEN_KEY, jwt);
+    localStorage.setItem(ADMIN_KEY, JSON.stringify(adminData));
+    setToken(jwt);
+    setAdmin(adminData);
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ADMIN_KEY);
+    setToken(null);
+    setAdmin(null);
+  }, []);
+
+  const authFetch = useCallback(
+    (url: string, options: RequestInit = {}) => {
+      const headers = new Headers(options.headers);
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return fetch(url, { ...options, headers });
+    },
+    [token]
+  );
+
+  return (
+    <AuthContext.Provider value={{ admin, token, login, logout, authFetch }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}
+```
+
+--- FILE: apps/admin/src/layouts/auth-layout.tsx ---
+```typescript
+import { Outlet } from "react-router-dom";
+import { Flex } from "antd";
+
+export function AuthLayout() {
+  return (
+    <Flex justify="center" align="center" style={{ minHeight: "100vh", padding: "0 16px", background: "#f5f5f5" }}>
+      <div style={{ width: "100%", maxWidth: 400 }}>
+        <Outlet />
+      </div>
+    </Flex>
+  );
+}
+```
+
+--- FILE: apps/admin/src/layouts/admin-layout.tsx ---
+```typescript
+import { useState } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Layout, Menu, Dropdown, Avatar, Button, Space, Typography } from "antd";
+import {
+  DashboardOutlined,
+  TeamOutlined,
+  LogoutOutlined,
+  DownOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+} from "@ant-design/icons";
+import type { MenuProps } from "antd";
+import { useAuth } from "../hooks/use-auth.js";
+
+const { Header, Sider, Content } = Layout;
+const { Text } = Typography;
+
+const menuItems: MenuProps["items"] = [
+  { key: "/", icon: <DashboardOutlined />, label: "داشبورد" },
+  { key: "/admins", icon: <TeamOutlined />, label: "مدیران" },
+];
+
+export function AdminLayout() {
+  const { admin, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const initials = admin?.name
+    ? admin.name.split(" ").map((w) => w[0]).join("").slice(0, 2)
+    : admin?.email?.[0]?.toUpperCase() || "A";
+
+  const dropdownItems: MenuProps["items"] = [
+    { key: "email", label: admin?.email, disabled: true },
+    { type: "divider" },
+    { key: "dashboard", icon: <DashboardOutlined />, label: "داشبورد" },
+    { type: "divider" },
+    { key: "logout", icon: <LogoutOutlined />, label: "خروج", danger: true },
+  ];
+
+  const handleDropdownClick: MenuProps["onClick"] = ({ key }) => {
+    if (key === "dashboard") navigate("/");
+    if (key === "logout") {
+      logout();
+      navigate("/login");
+    }
+  };
+
+  return (
+    <Layout style={{ minHeight: "100vh" }}>
+      <Header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
+        <Space>
+          <div
+            style={{
+              width: 32, height: 32, borderRadius: 6, background: "#1d4ed8", color: "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14,
+            }}
+          >
+            S
+          </div>
+          <Text strong style={{ color: "rgba(255,255,255,0.95)", fontSize: 15 }}>
+            {{PROJECT_TITLE}} Admin
+          </Text>
+        </Space>
+        <Dropdown menu={{ items: dropdownItems, onClick: handleDropdownClick }} trigger={["click"]}>
+          <Button type="text" style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.85)" }}>
+            <Avatar size="small" style={{ backgroundColor: "#e6f0ff", color: "#1d4ed8" }}>
+              {initials}
+            </Avatar>
+            <span className="hidden md:inline">{admin?.name || admin?.email}</span>
+            <DownOutlined style={{ fontSize: 10 }} />
+          </Button>
+        </Dropdown>
+      </Header>
+      <Layout>
+        <Sider
+          collapsible collapsed={collapsed} onCollapse={setCollapsed} breakpoint="md"
+          width={220} theme="light" trigger={null}
+          style={{ borderInlineStart: "1px solid #f0f0f0" }}
+        >
+          <div style={{ padding: "16px 8px" }}>
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              block
+            />
+          </div>
+          <Menu
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderInlineEnd: "none" }}
+          />
+        </Sider>
+        <Content style={{ padding: 24 }}>
+          <div style={{ maxWidth: 900, margin: "0 auto" }}>
+            <Outlet />
+          </div>
+        </Content>
+      </Layout>
+    </Layout>
+  );
+}
+```
+
+--- FILE: apps/admin/src/pages/login.tsx ---
+```typescript
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, Form, Input, Button, Alert, Divider, Typography } from "antd";
+import { useAuth } from "../hooks/use-auth.js";
+
+const { Title, Text } = Typography;
+
+export function LoginPage() {
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (values: { email: string; password: string }) => {
+    setError("");
+    setLoading(true);
+    try {
+      await login(values.email, values.password);
+      navigate("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطا در ورود");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <div style={{ textAlign: "center", paddingBottom: 16 }}>
+        <div
+          style={{
+            width: 56, height: 56, borderRadius: 12, background: "#1d4ed8", color: "#fff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 700, fontSize: 24, margin: "0 auto",
+          }}
+        >
+          S
+        </div>
+        <Title level={4} style={{ marginTop: 12 }}>ورود به پنل مدیریت</Title>
+        <Text type="secondary">{{PROJECT_TITLE}} Admin</Text>
+      </div>
+      <Divider style={{ margin: "16px 0" }} />
+      {error && <Alert type="error" message={error} showIcon style={{ marginBottom: 16 }} />}
+      <Form onFinish={handleSubmit} layout="vertical">
+        <Form.Item label="ایمیل" name="email" rules={[{ required: true, message: "ایمیل الزامی است" }]}>
+          <Input dir="ltr" placeholder="admin@{{SCOPE}}.app" />
+        </Form.Item>
+        <Form.Item label="رمز عبور" name="password" rules={[{ required: true, message: "رمز عبور الزامی است" }]}>
+          <Input.Password dir="ltr" placeholder="********" />
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading} block>ورود</Button>
+        </Form.Item>
+      </Form>
+    </Card>
+  );
+}
+```
+
+--- FILE: apps/admin/src/pages/dashboard.tsx ---
+```typescript
+import { useNavigate } from "react-router-dom";
+import { Card, Avatar, Tag, Button, Space, Typography, Row, Col } from "antd";
+import { TeamOutlined, SafetyCertificateOutlined, CalendarOutlined, LeftOutlined } from "@ant-design/icons";
+import { useAuth } from "../hooks/use-auth.js";
+
+const { Title, Text } = Typography;
+
+export function DashboardPage() {
+  const { admin } = useAuth();
+  const navigate = useNavigate();
+  const initials = admin?.name
+    ? admin.name.split(" ").map((w) => w[0]).join("").slice(0, 2)
+    : admin?.email?.[0]?.toUpperCase() || "A";
+
+  return (
+    <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      <div>
+        <Title level={3} style={{ margin: 0 }}>داشبورد</Title>
+        <Text type="secondary">به پنل مدیریت {{PROJECT_TITLE}} خوش آمدید</Text>
+      </div>
+      <Card>
+        <Space size="middle">
+          <Avatar size={56} style={{ backgroundColor: "#e6f0ff", color: "#1d4ed8", fontSize: 20 }}>{initials}</Avatar>
+          <div>
+            <Title level={5} style={{ margin: 0 }}>{admin?.name || admin?.email}</Title>
+            <Space>
+              <Text type="secondary" dir="ltr">{admin?.email}</Text>
+              <Tag color={admin?.role === "super_admin" ? "blue" : "default"}>
+                <SafetyCertificateOutlined /> {admin?.role === "super_admin" ? "سوپر ادمین" : "ادمین"}
+              </Tag>
+            </Space>
+          </div>
+        </Space>
+      </Card>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Space><TeamOutlined style={{ color: "#999" }} /><Text type="secondary">مدیران سیستم</Text></Space>
+              <Button type="default" block onClick={() => navigate("/admins")}><LeftOutlined /> مدیریت مدیران</Button>
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Space direction="vertical">
+              <Space><CalendarOutlined style={{ color: "#999" }} /><Text type="secondary">آخرین ورود</Text></Space>
+              <Text strong>{admin?.lastLogin ? new Date(admin.lastLogin).toLocaleDateString("fa-IR") : "—"}</Text>
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Space direction="vertical">
+              <Space><SafetyCertificateOutlined style={{ color: "#999" }} /><Text type="secondary">سطح دسترسی</Text></Space>
+              <Text strong>{admin?.role === "super_admin" ? "دسترسی کامل" : "دسترسی محدود"}</Text>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+    </Space>
+  );
+}
+```
+
+--- FILE: apps/admin/src/pages/admins.tsx ---
+```typescript
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/use-auth.js";
+import { Button, Input, Tag, Card, Modal, Form, Select, Table, Dropdown, Alert, Space, Typography } from "antd";
+import type { MenuProps, TableColumnsType } from "antd";
+import { PlusOutlined, EditOutlined, EllipsisOutlined, PoweroffOutlined, ExclamationCircleFilled, TeamOutlined } from "@ant-design/icons";
+
+const { Title, Text } = Typography;
+
+interface Admin {
+  id: number; email: string; name: string | null; role: string;
+  isActive: number; lastLogin: string | null; createdAt: string;
+}
+
+export function AdminsPage() {
+  const { admin: currentUser, authFetch } = useAuth();
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Admin | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [actionAdmin, setActionAdmin] = useState<Admin | null>(null);
+  const [form] = Form.useForm();
+
+  const isSuperAdmin = currentUser?.role === "super_admin";
+
+  const fetchAdmins = async () => {
+    setError("");
+    try {
+      const res = await authFetch("/api/admin/admins");
+      const data = await res.json();
+      if (res.ok) { setAdmins(data.data); }
+      else { setError(data.message || "خطا در دریافت لیست مدیران"); }
+    } catch { setError("خطا در اتصال به سرور"); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchAdmins(); }, []);
+
+  const openCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ name: "", email: "", password: "", role: "admin" });
+    setModalOpen(true);
+  };
+
+  const openEdit = (admin: Admin) => {
+    setEditing(admin);
+    form.resetFields();
+    form.setFieldsValue({ name: admin.name || "", email: admin.email, password: "", role: admin.role });
+    setModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      setSaving(true);
+      let res: Response;
+      if (editing) {
+        const body: Record<string, string> = { name: values.name, role: values.role };
+        if (values.password) body.password = values.password;
+        res = await authFetch(`/api/admin/admins/${editing.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+        });
+      } else {
+        res = await authFetch("/api/admin/admins", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
+        });
+      }
+      const data = await res.json();
+      if (!res.ok) { form.setFields([{ name: "email", errors: [data.message || "خطا در ذخیره"] }]); return; }
+      setModalOpen(false);
+      fetchAdmins();
+    } catch { /* validation errors handled by form */ }
+    finally { setSaving(false); }
+  };
+
+  const toggleActive = async (admin: Admin) => {
+    try {
+      const res = await authFetch(`/api/admin/admins/${admin.id}/toggle`, { method: "PATCH" });
+      if (!res.ok) { const data = await res.json(); setError(data.message || "خطا در تغییر وضعیت"); return; }
+      fetchAdmins();
+    } catch { setError("خطا در اتصال به سرور"); }
+  };
+
+  const getRowMenuItems = (admin: Admin): MenuProps["items"] => [
+    { key: "edit", icon: <EditOutlined />, label: "ویرایش" },
+    { key: "toggle", icon: <PoweroffOutlined />, label: admin.isActive ? "غیرفعال کردن" : "فعال کردن" },
+  ];
+
+  const handleRowMenuClick: MenuProps["onClick"] = ({ key }) => {
+    if (!actionAdmin) return;
+    if (key === "edit") openEdit(actionAdmin);
+    if (key === "toggle") toggleActive(actionAdmin);
+  };
+
+  const columns: TableColumnsType<Admin> = [
+    { title: "نام", dataIndex: "name", render: (v: string | null) => v || "—" },
+    { title: "ایمیل", dataIndex: "email", render: (v: string) => <span dir="ltr">{v}</span> },
+    {
+      title: "نقش", dataIndex: "role",
+      render: (role: string) => <Tag color={role === "super_admin" ? "blue" : "default"}>{role === "super_admin" ? "سوپر ادمین" : "ادمین"}</Tag>,
+    },
+    {
+      title: "وضعیت", dataIndex: "isActive",
+      render: (v: number) => <Tag color={v ? "green" : "red"}>{v ? "فعال" : "غیرفعال"}</Tag>,
+    },
+    {
+      title: "آخرین ورود", dataIndex: "lastLogin",
+      render: (v: string | null) => v ? new Date(v).toLocaleDateString("fa-IR") : "—",
+    },
+    ...(isSuperAdmin ? [{
+      title: "", key: "actions", width: 48,
+      render: (_: unknown, record: Admin) => (
+        <Dropdown menu={{ items: getRowMenuItems(record), onClick: handleRowMenuClick }} trigger={["click"]}>
+          <Button type="text" icon={<EllipsisOutlined />} size="small" onClick={() => setActionAdmin(record)} />
+        </Dropdown>
+      ),
+    }] : []),
+  ];
+
+  return (
+    <Space direction="vertical" size="large" style={{ width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <Title level={3} style={{ margin: 0 }}>مدیریت مدیران</Title>
+          <Text type="secondary">مدیریت دسترسی‌ها و حساب‌های مدیران سیستم</Text>
+        </div>
+        {isSuperAdmin && <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>افزودن مدیر</Button>}
+      </div>
+      {error && <Alert type="error" message={error} showIcon icon={<ExclamationCircleFilled />} />}
+      <Card title={<Space><TeamOutlined /><span>لیست مدیران</span><Tag>{admins.length} نفر</Tag></Space>}>
+        <Table columns={columns} dataSource={admins} rowKey="id" loading={loading} pagination={false}
+          locale={{ emptyText: "هیچ مدیری یافت نشد" }} />
+      </Card>
+      <Modal open={modalOpen} title={editing ? "ویرایش مدیر" : "افزودن مدیر جدید"}
+        onCancel={() => setModalOpen(false)} onOk={handleSave} confirmLoading={saving}
+        okText={editing ? "ذخیره تغییرات" : "ایجاد مدیر"} cancelText="انصراف"
+      >
+        <Form form={form} layout="vertical" style={{ paddingTop: 8 }}>
+          <Form.Item label="نام" name="name"><Input placeholder="نام مدیر" /></Form.Item>
+          <Form.Item label="ایمیل" name="email"
+            rules={editing ? [] : [{ required: true, message: "ایمیل الزامی است" }]}
+          >
+            <Input dir="ltr" placeholder={`admin@{{SCOPE}}.app`} disabled={!!editing} />
+          </Form.Item>
+          <Form.Item label={editing ? "رمز عبور جدید (خالی = بدون تغییر)" : "رمز عبور"} name="password"
+            rules={editing ? [] : [{ required: true, message: "رمز عبور الزامی است" }]}
+          >
+            <Input.Password dir="ltr" placeholder="••••••••" />
+          </Form.Item>
+          <Form.Item label="نقش" name="role">
+            <Select options={[{ value: "admin", label: "ادمین" }, { value: "super_admin", label: "سوپر ادمین" }]} />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Space>
+  );
+}
 ```
 
 ---
