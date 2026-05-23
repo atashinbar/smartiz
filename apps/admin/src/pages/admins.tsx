@@ -114,8 +114,17 @@ export function AdminsPage() {
   };
 
   const toggleActive = async (admin: Admin) => {
-    await authFetch(`/api/admin/admins/${admin.id}/toggle`, { method: "PATCH" });
-    fetchAdmins();
+    try {
+      const res = await authFetch(`/api/admin/admins/${admin.id}/toggle`, { method: "PATCH" });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "خطا در تغییر وضعیت");
+        return;
+      }
+      fetchAdmins();
+    } catch {
+      setError("خطا در اتصال به سرور");
+    }
   };
 
   const getRowMenuItems = (admin: Admin): MenuProps["items"] => [

@@ -34,7 +34,9 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const [saltHex, expectedHashHex] = stored.split(":");
   if (!saltHex || !expectedHashHex) return false;
 
-  const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)));
+  const match = saltHex.match(/.{2}/g);
+  if (!match) return false;
+  const salt = new Uint8Array(match.map((byte) => parseInt(byte, 16)));
   const hash = await deriveKey(password, salt);
   const hashHex = toHex(hash);
 

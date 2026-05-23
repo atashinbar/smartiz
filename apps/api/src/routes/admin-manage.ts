@@ -27,6 +27,10 @@ export const adminManageRoutes = new Hono<{ Variables: AppVariables }>()
       return c.json({ status: "error", message: "ایمیل و رمز عبور الزامی است" }, 400);
     }
 
+    if (role && role !== "admin" && role !== "super_admin") {
+      return c.json({ status: "error", message: "نقش نامعتبر است" }, 400);
+    }
+
     const db = c.get("db");
     const [existing] = await db.select({ id: admins.id }).from(admins).where(eq(admins.email, email)).limit(1);
     if (existing) {
@@ -45,6 +49,7 @@ export const adminManageRoutes = new Hono<{ Variables: AppVariables }>()
 
   .patch("/:id", protectSuperAdmin, async (c) => {
     const id = Number(c.req.param("id"));
+    if (isNaN(id)) return c.json({ status: "error", message: "شناسه نامعتبر است" }, 400);
     const body = await c.req.json<{ name?: string; email?: string; role?: string; password?: string }>();
 
     const db = c.get("db");
@@ -64,6 +69,7 @@ export const adminManageRoutes = new Hono<{ Variables: AppVariables }>()
 
   .patch("/:id/toggle", protectSuperAdmin, async (c) => {
     const id = Number(c.req.param("id"));
+    if (isNaN(id)) return c.json({ status: "error", message: "شناسه نامعتبر است" }, 400);
     const db = c.get("db");
 
     const [current] = await db.select({ isActive: admins.isActive }).from(admins).where(eq(admins.id, id)).limit(1);

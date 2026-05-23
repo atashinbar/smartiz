@@ -25,7 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [admin, setAdmin] = useState<AdminData | null>(() => {
     const stored = localStorage.getItem(ADMIN_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
   });
 
   const login = useCallback(async (email: string, password: string) => {
@@ -53,12 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const authFetch = useCallback(
     (url: string, options: RequestInit = {}) => {
+      const headers = new Headers(options.headers);
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
       return fetch(url, {
         ...options,
-        headers: {
-          ...options.headers,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers,
       });
     },
     [token]
