@@ -8,6 +8,7 @@
     "db:generate": "pnpm --filter @smartiz/db db:generate",
     "db:migrate": "pnpm --filter @smartiz/db db:migrate",
     "db:studio": "pnpm --filter @smartiz/db db:studio",
+    "db:seed-admin": "pnpm --filter @smartiz/db db:seed-admin",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v && docker compose up -d",

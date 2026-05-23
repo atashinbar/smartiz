@@ -14,7 +14,7 @@ export function AppLayout() {
       <div className="flex">
         <Sidebar />
         <main className="flex-1 pb-20 md:pb-6">
-          <div className="mx-auto max-w-[1280px] px-4 py-6">
+          <div className="mx-auto max-w-[768px] px-4 py-6">
             <Outlet />
           </div>
         </main>

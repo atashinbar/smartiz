@@ -14,9 +14,11 @@
     "dev": "tsc --watch",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed-admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {
+    "@smartiz/auth": "workspace:*",
     "dotenv": "^16",
     "drizzle-orm": "^0.41.0",
     "postgres": "^3"
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@smartiz/typescript-config": "workspace:*",
     "drizzle-kit": "^0.30.0",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

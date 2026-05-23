@@ -1,10 +1,28 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ConfigProvider, App as AntApp } from "antd";
+import { queryClient } from "./lib/query-client.js";
+import { antLocale, themeConfig } from "./theme.js";
+import App from "./App.js";
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!);
+root.render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <ConfigProvider direction="rtl" locale={antLocale} theme={themeConfig}>
+        <AntApp>
+          <App />
+        </AntApp>
+      </ConfigProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );
+
+requestAnimationFrame(() => {
+  const splash = document.getElementById("splash");
+  if (splash) {
+    splash.style.opacity = "0";
+    setTimeout(() => splash.remove(), 300);
+  }
+});

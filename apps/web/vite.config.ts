@@ -8,6 +8,10 @@ export default defineConfig({
 		VitePWA({
 			registerType: 'prompt',
 			includeAssets: ['icons/*.png'],
+			devOptions: {
+				enabled: true,
+				type: 'module',
+			},
 			manifest: {
 				name: 'اسمارتیز - پلتفرم آموزش هوشمند',
 				short_name: 'Smartiz',
@@ -38,6 +42,8 @@ export default defineConfig({
 				]
 			},
 			workbox: {
+				skipWaiting: true,
+				clientsClaim: true,
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
 				runtimeCaching: [
 					{
