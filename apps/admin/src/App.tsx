@@ -1,16 +1,19 @@
-import { Button } from "@smartiz/ui";
+import { useMemo } from "react";
+import { RouterProvider } from "react-router-dom";
+import { AuthProvider, useAuth } from "./hooks/use-auth.js";
+import { createAppRouter } from "./router.js";
+
+function AppWithAuth() {
+  const { token } = useAuth();
+  const router = useMemo(() => createAppRouter(!!token), [token]);
+  return <RouterProvider router={router} />;
+}
 
 function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-foreground">Smartiz Admin</h1>
-        <p className="text-muted-foreground">Admin Panel</p>
-        <div className="space-x-2">
-          <Button>Login</Button>
-        </div>
-      </div>
-    </div>
+    <AuthProvider>
+      <AppWithAuth />
+    </AuthProvider>
   );
 }
 

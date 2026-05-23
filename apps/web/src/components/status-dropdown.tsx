@@ -40,12 +40,39 @@ export function StatusDropdown() {
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [manifestOk, setManifestOk] = useState(false);
+  const [swActive, setSwActive] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { needRefresh, offlineReady } = usePWA();
 
+  useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]');
+    setManifestOk(!!link);
+  }, []);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    const check = () => {
+      if (navigator.serviceWorker.controller) {
+        setSwActive(true);
+        return;
+      }
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg?.active || reg?.installing || reg?.waiting) {
+          setSwActive(true);
+        }
+      });
+    };
+
+    check();
+    navigator.serviceWorker.addEventListener("controllerchange", check);
+    return () => navigator.serviceWorker.removeEventListener("controllerchange", check);
+  }, []);
+
   const swState = needRefresh
     ? "update_available" as const
-    : offlineReady
+    : swActive || offlineReady
     ? "active" as const
     : "pending" as const;
 
@@ -77,7 +104,11 @@ export function StatusDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const allHealthy = health?.status === "healthy";
+  const apiHealthy = health?.status === "healthy";
+  const swReady = swState === "active" || swState === "update_available";
+  const pwaReady = swReady && manifestOk;
+  const allHealthy = apiHealthy && pwaReady;
+  const dotColor = allHealthy ? "bg-emerald-500" : !loading ? "bg-amber-500" : "bg-red-500";
 
   return (
     <div className="relative" ref={ref}>
@@ -90,7 +121,7 @@ export function StatusDropdown() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         {!loading && (
-          <span className={`absolute top-1 left-1 h-2 w-2 rounded-full ${allHealthy ? "bg-emerald-500" : "bg-red-500"}`} />
+          <span className={`absolute top-1 left-1 h-2 w-2 rounded-full ${dotColor}`} />
         )}
       </button>
 
@@ -148,7 +179,7 @@ export function StatusDropdown() {
                       <span className="text-sm">📋</span>
                       <span className="text-sm text-foreground">Manifest</span>
                     </div>
-                    <StatusDot status="healthy" />
+                    <StatusDot status={manifestOk ? "healthy" : "unhealthy"} />
                   </div>
                   <div className="flex items-center justify-between rounded-md bg-secondary/50 px-3 py-2">
                     <div className="flex items-center gap-2">

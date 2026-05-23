@@ -6,6 +6,8 @@ import type { AppVariables } from "./middleware/env.js";
 import { createEnvMiddleware } from "./middleware/env.js";
 import { errorHandler } from "./middleware/error.js";
 import { healthRoutes } from "./routes/health.js";
+import { adminAuthRoutes } from "./routes/admin-auth.js";
+import { adminManageRoutes } from "./routes/admin-manage.js";
 
 export function createApp(env: EnvConfig) {
   const app = new Hono<{ Variables: AppVariables }>();
@@ -15,6 +17,8 @@ export function createApp(env: EnvConfig) {
   app.use("*", createEnvMiddleware(env));
 
   app.route("/api", healthRoutes);
+  app.route("/api/admin", adminAuthRoutes);
+  app.route("/api/admin/admins", adminManageRoutes);
 
   app.onError(errorHandler);
 

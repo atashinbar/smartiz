@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { SplashScreen } from "../components/splash-screen.js";
 
 interface PWAContextValue {
   needRefresh: boolean;
@@ -24,6 +25,7 @@ export function PWAProvider({ children }: { children: ReactNode }) {
   } = useRegisterSW();
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [splashVisible, setSplashVisible] = useState(true);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -36,8 +38,18 @@ export function PWAProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (offlineReady) {
+      const timer = setTimeout(() => setSplashVisible(false), 300);
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(() => setSplashVisible(false), 2000);
+    return () => clearTimeout(timer);
+  }, [offlineReady]);
+
   return (
     <PWAContext.Provider value={{ needRefresh, setNeedRefresh, offlineReady, updateServiceWorker }}>
+      <SplashScreen isVisible={splashVisible} />
       {children}
     </PWAContext.Provider>
   );

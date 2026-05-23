@@ -147,6 +147,7 @@ Generate all files below in order. Replace every `{{PLACEHOLDER}}` with the user
     "db:generate": "pnpm --filter @{{SCOPE}}/db db:generate",
     "db:migrate": "pnpm --filter @{{SCOPE}}/db db:migrate",
     "db:studio": "pnpm --filter @{{SCOPE}}/db db:studio",
+    "db:seed-admin": "pnpm --filter @{{SCOPE}}/db db:seed-admin",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v && docker compose up -d",
@@ -445,9 +446,11 @@ export type { UserType, AdminRole } from "./types/user.js";
     "dev": "tsc --watch",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed-admin": "tsx scripts/seed-admin.ts"
   },
   "dependencies": {
+    "@{{SCOPE}}/auth": "workspace:*",
     "dotenv": "^16",
     "drizzle-orm": "^0.41.0",
     "postgres": "^3"
@@ -455,6 +458,7 @@ export type { UserType, AdminRole } from "./types/user.js";
   "devDependencies": {
     "@{{SCOPE}}/typescript-config": "workspace:*",
     "drizzle-kit": "^0.30.0",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
@@ -581,8 +585,53 @@ export { admins } from "./admins.js";
 --- FILE: packages/db/src/index.ts ---
 ```typescript
 export { createDb, type Database } from "./connection.js";
-export { sql } from "drizzle-orm";
+export { sql, eq } from "drizzle-orm";
 export * as schema from "./schema/index.js";
+```
+
+--- FILE: packages/db/scripts/seed-admin.ts ---
+```typescript
+import "dotenv/config";
+import { createDb, eq, schema } from "../src/index.js";
+import { hashPassword } from "@{{SCOPE}}/auth";
+
+const { admins } = schema;
+
+async function main() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.error("DATABASE_URL is not set");
+    process.exit(1);
+  }
+
+  const email = process.env.ADMIN_EMAIL || "admin@{{PROJECT_NAME}}.app";
+  const password = process.env.ADMIN_PASSWORD || "admin1234";
+  const name = process.env.ADMIN_NAME || "Super Admin";
+
+  const db = createDb(dbUrl);
+
+  const [existing] = await db.select({ id: admins.id }).from(admins).where(eq(admins.email, email)).limit(1);
+  if (existing) {
+    console.log(`Admin "${email}" already exists (id: ${existing.id})`);
+    process.exit(0);
+  }
+
+  const hashed = await hashPassword(password);
+  const [admin] = await db.insert(admins).values({
+    email,
+    password: hashed,
+    name,
+    role: "super_admin",
+  }).returning({ id: admins.id, email: admins.email });
+
+  console.log(`Created super admin: ${admin.email} (id: ${admin.id})`);
+  process.exit(0);
+}
+
+main().catch((err) => {
+  console.error("Seed failed:", err);
+  process.exit(1);
+});
 ```
 
 ---
@@ -738,8 +787,60 @@ export class MockOTPProvider implements OTPProvider {
 ```typescript
 export { signToken, verifyToken, type TokenPayload } from "./jwt.js";
 export { protect, protectAdmin, protectSuperAdmin } from "./middleware.js";
+export { hashPassword, verifyPassword } from "./password.js";
 export type { OTPProvider } from "./types.js";
 export { MockOTPProvider } from "./otp/mock.js";
+```
+
+--- FILE: packages/auth/src/password.ts ---
+```typescript
+const ITERATIONS = 100_000;
+const HASH_LENGTH = 64;
+const SALT_LENGTH = 32;
+
+function toHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function deriveKey(password: string, salt: Uint8Array): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  return crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: ITERATIONS, hash: "SHA-256" },
+    keyMaterial,
+    HASH_LENGTH * 8
+  );
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  const hash = await deriveKey(password, salt);
+  return `${toHex(salt.buffer as ArrayBuffer)}:${toHex(hash)}`;
+}
+
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [saltHex, expectedHashHex] = stored.split(":");
+  if (!saltHex || !expectedHashHex) return false;
+
+  const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)));
+  const hash = await deriveKey(password, salt);
+  const hashHex = toHex(hash);
+
+  if (hashHex.length !== expectedHashHex.length) return false;
+  let result = 0;
+  for (let i = 0; i < hashHex.length; i++) {
+    result |= hashHex.charCodeAt(i) ^ expectedHashHex.charCodeAt(i);
+  }
+  return result === 0;
+}
 ```
 
 ---
@@ -1586,6 +1687,8 @@ import type { AppVariables } from "./middleware/env.js";
 import { createEnvMiddleware } from "./middleware/env.js";
 import { errorHandler } from "./middleware/error.js";
 import { healthRoutes } from "./routes/health.js";
+import { adminAuthRoutes } from "./routes/admin-auth.js";
+import { adminManageRoutes } from "./routes/admin-manage.js";
 
 export function createApp(env: EnvConfig) {
   const app = new Hono<{ Variables: AppVariables }>();
@@ -1595,11 +1698,169 @@ export function createApp(env: EnvConfig) {
   app.use("*", createEnvMiddleware(env));
 
   app.route("/api", healthRoutes);
+  app.route("/api/admin", adminAuthRoutes);
+  app.route("/api/admin/admins", adminManageRoutes);
 
   app.onError(errorHandler);
 
   return app;
 }
+```
+
+--- FILE: apps/api/src/routes/admin-auth.ts ---
+```typescript
+import { Hono } from "hono";
+import { eq, schema } from "@{{SCOPE}}/db";
+import { signToken, verifyPassword, protectAdmin } from "@{{SCOPE}}/auth";
+import type { AppVariables } from "../middleware/env.js";
+
+const { admins } = schema;
+
+export const adminAuthRoutes = new Hono<{ Variables: AppVariables }>()
+  .post("/login", async (c) => {
+    const { email, password } = await c.req.json<{ email: string; password: string }>();
+    if (!email || !password) {
+      return c.json({ status: "error", message: "ایمیل و رمز عبور الزامی است" }, 400);
+    }
+
+    const db = c.get("db");
+    const [admin] = await db.select().from(admins).where(eq(admins.email, email)).limit(1);
+
+    if (!admin) {
+      return c.json({ status: "error", message: "ایمیل یا رمز عبور اشتباه است" }, 401);
+    }
+
+    if (!admin.isActive) {
+      return c.json({ status: "error", message: "حساب کاربری غیرفعال است" }, 403);
+    }
+
+    if (admin.lockoutUntil && new Date(admin.lockoutUntil) > new Date()) {
+      return c.json({ status: "error", message: "حساب قفل شده است. لطفاً بعداً تلاش کنید" }, 423);
+    }
+
+    const valid = await verifyPassword(password, admin.password);
+    if (!valid) {
+      const attempts = admin.loginAttempts + 1;
+      const lockoutUntil = attempts >= 5 ? new Date(Date.now() + 30 * 60 * 1000) : null;
+      await db
+        .update(admins)
+        .set({ loginAttempts: attempts, lockoutUntil, updatedAt: new Date() })
+        .where(eq(admins.id, admin.id));
+
+      return c.json({ status: "error", message: "ایمیل یا رمز عبور اشتباه است" }, 401);
+    }
+
+    await db
+      .update(admins)
+      .set({ loginAttempts: 0, lockoutUntil: null, lastLogin: new Date(), updatedAt: new Date() })
+      .where(eq(admins.id, admin.id));
+
+    const secret = c.get("env").JWT_SECRET;
+    const token = await signToken({ id: admin.id, userType: admin.role as "admin" | "super_admin" }, secret, "24h");
+
+    return c.json({
+      status: "success",
+      data: {
+        token,
+        admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
+      },
+    });
+  })
+
+  .get("/me", protectAdmin, async (c) => {
+    const { id } = c.get("user");
+    const db = c.get("db");
+    const [admin] = await db.select({
+      id: admins.id, email: admins.email, name: admins.name,
+      role: admins.role, isActive: admins.isActive, lastLogin: admins.lastLogin,
+    }).from(admins).where(eq(admins.id, id)).limit(1);
+
+    if (!admin) return c.json({ status: "error", message: "Admin not found" }, 404);
+    return c.json({ status: "success", data: admin });
+  });
+```
+
+--- FILE: apps/api/src/routes/admin-manage.ts ---
+```typescript
+import { Hono } from "hono";
+import { eq, schema } from "@{{SCOPE}}/db";
+import { hashPassword, protectAdmin, protectSuperAdmin } from "@{{SCOPE}}/auth";
+import type { AppVariables } from "../middleware/env.js";
+
+const { admins } = schema;
+
+export const adminManageRoutes = new Hono<{ Variables: AppVariables }>()
+  .use("*", protectAdmin)
+
+  .get("/", async (c) => {
+    const db = c.get("db");
+    const list = await db.select({
+      id: admins.id, email: admins.email, name: admins.name,
+      role: admins.role, isActive: admins.isActive, lastLogin: admins.lastLogin,
+      createdAt: admins.createdAt,
+    }).from(admins).orderBy(admins.id);
+
+    return c.json({ status: "success", data: list });
+  })
+
+  .post("/", protectSuperAdmin, async (c) => {
+    const { email, password, name, role } = await c.req.json<{
+      email: string; password: string; name?: string; role?: string;
+    }>();
+    if (!email || !password) {
+      return c.json({ status: "error", message: "ایمیل و رمز عبور الزامی است" }, 400);
+    }
+
+    const db = c.get("db");
+    const [existing] = await db.select({ id: admins.id }).from(admins).where(eq(admins.email, email)).limit(1);
+    if (existing) {
+      return c.json({ status: "error", message: "این ایمیل قبلاً ثبت شده است" }, 409);
+    }
+
+    const hashed = await hashPassword(password);
+    const [admin] = await db.insert(admins).values({
+      email, password: hashed, name: name || null, role: role || "admin",
+    }).returning({
+      id: admins.id, email: admins.email, name: admins.name, role: admins.role, isActive: admins.isActive,
+    });
+
+    return c.json({ status: "success", data: admin }, 201);
+  })
+
+  .patch("/:id", protectSuperAdmin, async (c) => {
+    const id = Number(c.req.param("id"));
+    const body = await c.req.json<{ name?: string; email?: string; role?: string; password?: string }>();
+
+    const db = c.get("db");
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.email !== undefined) updates.email = body.email;
+    if (body.role !== undefined) updates.role = body.role;
+    if (body.password) updates.password = await hashPassword(body.password);
+
+    const [admin] = await db.update(admins).set(updates).where(eq(admins.id, id)).returning({
+      id: admins.id, email: admins.email, name: admins.name, role: admins.role, isActive: admins.isActive,
+    });
+
+    if (!admin) return c.json({ status: "error", message: "ادمین یافت نشد" }, 404);
+    return c.json({ status: "success", data: admin });
+  })
+
+  .patch("/:id/toggle", protectSuperAdmin, async (c) => {
+    const id = Number(c.req.param("id"));
+    const db = c.get("db");
+
+    const [current] = await db.select({ isActive: admins.isActive }).from(admins).where(eq(admins.id, id)).limit(1);
+    if (!current) return c.json({ status: "error", message: "ادمین یافت نشد" }, 404);
+
+    const [admin] = await db.update(admins).set({
+      isActive: current.isActive ? 0 : 1, updatedAt: new Date(),
+    }).where(eq(admins.id, id)).returning({
+      id: admins.id, email: admins.email, name: admins.name, role: admins.role, isActive: admins.isActive,
+    });
+
+    return c.json({ status: "success", data: admin });
+  });
 ```
 
 --- FILE: apps/api/src/entry-node.ts ---
