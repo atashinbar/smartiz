@@ -49,6 +49,7 @@ Fill in these values before sending this prompt to an LLM:
 | `{{LANGUAGE}}` | `fa` | HTML lang attribute |
 | `{{DIRECTION}}` | `rtl` | Text direction: "rtl" or "ltr" |
 | `{{INCLUDE_PWA}}` | `true` | Include PWA support in web app |
+| `{{INCLUDE_I18N}}` | `true` | Include i18n (react-i18next) for localization |
 | `{{INCLUDE_TANSTACK}}` | `true` | Include TanStack Query |
 | `{{INCLUDE_ZUSTAND}}` | `true` | Include Zustand state management |
 | `{{INCLUDE_STORAGE_R2}}` | `true` | Include Cloudflare R2 adapter |
@@ -117,6 +118,7 @@ api ← web (via proxy)
 | Flag | Files Included | Dependencies Included |
 |---|---|---|
 | `INCLUDE_PWA` = true | web: vite.config (PWA plugin), pwa-provider, pwa-install-prompt, pwa-update-notification, offline-banner, vite-env.d.ts, pwa.d.ts | vite-plugin-pwa, workbox-window |
+| `INCLUDE_I18N` = true | web: i18n/index.ts, i18n/locales/fa.json, main.tsx import | i18next, react-i18next |
 | `INCLUDE_TANSTACK` = true | web: lib/query-client, lib/api, main.tsx QueryClientProvider | @tanstack/react-query, @tanstack/react-query-devtools |
 | `INCLUDE_ZUSTAND` = true | web: stores/auth, stores/network, lib/api | zustand |
 | `INCLUDE_STORAGE_R2` = true | storage: adapters/r2.ts, index factory switch case | (already included via aws-sdk) |
@@ -1948,7 +1950,7 @@ export default {
 }
 ```
 
-*(Note to LLM: If INCLUDE_TANSTACK = "true", add to dependencies: `"@tanstack/react-query": "^5.100.10"` and to devDependencies: `"@tanstack/react-query-devtools": "^5.100.10"`. If INCLUDE_ZUSTAND = "true", add to dependencies: `"zustand": "^5.0.13"`. If INCLUDE_PWA = "true", add to devDependencies: `"vite-plugin-pwa": "^1.3.0", "workbox-window": "^7.4.1"`.)*
+*(Note to LLM: If INCLUDE_TANSTACK = "true", add to dependencies: `"@tanstack/react-query": "^5.100.10"` and to devDependencies: `"@tanstack/react-query-devtools": "^5.100.10"`. If INCLUDE_ZUSTAND = "true", add to dependencies: `"zustand": "^5.0.13"`. If INCLUDE_PWA = "true", add to devDependencies: `"vite-plugin-pwa": "^1.3.0", "workbox-window": "^7.4.1"`. If INCLUDE_I18N = "true", add to dependencies: `"i18next": "^26.2.0"`, `"react-i18next": "^17.0.8"`.)*
 
 --- FILE: apps/web/tsconfig.json ---
 ```json
@@ -2040,9 +2042,61 @@ interface BeforeInstallPromptEvent extends Event {
 @import "tailwindcss";
 @import "@{{SCOPE}}/ui/styles.css";
 
+@source "../../../packages/ui/src/**/*.tsx";
+
 @theme {
   --font-sans: "{{FONT_FAMILY}}", system-ui, sans-serif;
 }
+```
+
+*(The `@source` directive is required for Tailwind v4 in monorepos — without it, Tailwind won't detect classes used in `@{{SCOPE}}/ui` component files.)*
+
+--- FILE: apps/web/src/i18n/locales/fa.json ---
+*(Only include if INCLUDE_I18N = "true")*
+
+```json
+{
+  "login": {
+    "title": "ورود به {{PROJECT_TITLE}}",
+    "registerTitle": "ثبت‌نام",
+    "verifyTitle": "تایید شماره موبایل",
+    "phonePlaceholder": "شماره موبایل خود را وارد کنید",
+    "nationalIdPlaceholder": "کد ملی",
+    "getCode": "دریافت کد تایید",
+    "registerAndGetCode": "ثبت‌نام و دریافت کد تایید",
+    "verify": "تایید",
+    "back": "بازگشت",
+    "resendUntil": "ارسال مجدد تا {{time}}",
+    "resendCode": "ارسال مجدد کد تایید",
+    "changePhone": "تغییر شماره موبایل",
+    "enterCode": "کد تایید ۶ رقمی را وارد کنید",
+    "invalidCode": "کد نامعتبر",
+    "nationalIdRequired": "کد ملی الزامی است",
+    "checkPhoneError": "خطا در بررسی شماره",
+    "registerError": "خطا در ثبت‌نام",
+    "resendError": "خطا در ارسال مجدد کد",
+    "verifyDescription": "کد تایید ارسال شده به {{phone}} را وارد کنید",
+    "enterNationalId": "کد ملی خود را وارد کنید"
+  }
+}
+```
+
+--- FILE: apps/web/src/i18n/index.ts ---
+*(Only include if INCLUDE_I18N = "true")*
+
+```typescript
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import fa from "./locales/fa.json";
+
+i18n.use(initReactI18next).init({
+  resources: { fa: { translation: fa } },
+  lng: "fa",
+  fallbackLng: "fa",
+  interpolation: { escapeValue: false },
+});
+
+export default i18n;
 ```
 
 --- FILE: apps/web/src/lib/query-client.ts ---
@@ -2237,6 +2291,8 @@ import { createRoot } from "react-dom/client";
 // import { queryClient } from "./lib/query-client.js";
 // If INCLUDE_PWA = "true":
 // import { PWAProvider } from "./providers/pwa-provider.js";
+// If INCLUDE_I18N = "true":
+// import "./i18n/index.js";
 import "./index.css";
 import App from "./App.js";
 
@@ -2250,7 +2306,7 @@ createRoot(document.getElementById("root")!).render(
 );
 ```
 
-*(Note to LLM: Produce the final version with the correct wrapping order. PWAProvider outermost, then QueryClientProvider inside, then App. Only include providers whose flag is "true".)*
+*(Note to LLM: Produce the final version with the correct wrapping order. PWAProvider outermost, then QueryClientProvider inside, then App. If INCLUDE_I18N = "true", the i18n import must come before "./index.css". Only include providers whose flag is "true".)*
 
 --- FILE: apps/web/src/App.tsx ---
 ```typescript
