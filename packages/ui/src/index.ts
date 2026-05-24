@@ -4,6 +4,7 @@ export { Spinner } from "./spinner";
 export type { SpinnerProps } from "./spinner";
 export { Skeleton } from "./skeleton";
 export { Input } from "./input";
+export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "./input-otp";
 export { Label } from "./label";
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./card";
 export {

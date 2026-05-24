@@ -1,11 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { UserType, AdminRole } from "@smartiz/shared";
+import type { UserType } from "@smartiz/shared";
 
 interface User {
   id: number;
   phone: string;
-  userType: UserType | AdminRole;
+  name: string | null;
+  surname: string | null;
+  nationalId: string | null;
+  userType: UserType;
+  profileComplete: number;
+  isVerified: number;
 }
 
 interface AuthState {
@@ -25,6 +30,6 @@ export const useAuthStore = create<AuthState>()(
       login: (user, token) => set({ user, token, isAuthenticated: true }),
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
     }),
-    { name: "smartiz-auth" }
-  )
+    { name: "smartiz-auth" },
+  ),
 );

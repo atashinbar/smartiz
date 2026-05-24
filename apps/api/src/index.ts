@@ -8,6 +8,8 @@ import { errorHandler } from "./middleware/error.js";
 import { healthRoutes } from "./routes/health.js";
 import { adminAuthRoutes } from "./routes/admin-auth.js";
 import { adminManageRoutes } from "./routes/admin-manage.js";
+import { userAuthRoutes } from "./routes/user-auth.js";
+import { featureRoutes } from "./routes/features.js";
 
 export function createApp(env: EnvConfig) {
   const app = new Hono<{ Variables: AppVariables }>();
@@ -19,6 +21,8 @@ export function createApp(env: EnvConfig) {
   app.route("/api", healthRoutes);
   app.route("/api/admin", adminAuthRoutes);
   app.route("/api/admin/admins", adminManageRoutes);
+  app.route("/api/auth", userAuthRoutes);
+  app.route("/api/features", featureRoutes);
 
   app.onError(errorHandler);
 

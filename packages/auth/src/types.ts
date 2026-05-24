@@ -1,3 +1,3 @@
 export interface OTPProvider {
-  send(phone: string, code: string): Promise<boolean>;
+  send(phone: string): Promise<string>;
 }

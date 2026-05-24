@@ -17,7 +17,7 @@ export const users = pgTable(
     phone: text().notNull().unique(),
     name: text(),
     surname: text(),
-    nationalId: text("national_id"),
+    nationalId: text("national_id").unique(),
     birthDate: date("birth_date"),
     email: text(),
     userType: text("user_type").default("student").notNull(),

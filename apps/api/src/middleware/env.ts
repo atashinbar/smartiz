@@ -2,26 +2,31 @@ import type { MiddlewareHandler } from "hono";
 import type { EnvConfig } from "@smartiz/shared";
 import type { Database } from "@smartiz/db";
 import type { StorageProvider } from "@smartiz/storage";
-import type { TokenPayload } from "@smartiz/auth";
+import type { OTPProvider, TokenPayload } from "@smartiz/auth";
 import { createDb } from "@smartiz/db";
 import { createStorage } from "@smartiz/storage";
+import { createOTPProvider } from "@smartiz/auth";
 
 export interface AppVariables {
   env: EnvConfig;
   db: Database;
   storage: StorageProvider;
+  otpProvider: OTPProvider;
   user: TokenPayload;
 }
 
 export function createEnvMiddleware(env: EnvConfig): MiddlewareHandler {
-  // Create single instances at startup
   const db = createDb(env.DATABASE_URL);
   const storage = createStorage(mapStorageConfig(env));
+  const otpProvider = createOTPProvider(env.OTP_PROVIDER, {
+    MELI_PAYAMAK_API_KEY: env.MELI_PAYAMAK_API_KEY,
+  });
 
   return async (c, next) => {
     c.set("env", env);
     c.set("db", db);
     c.set("storage", storage);
+    c.set("otpProvider", otpProvider);
     await next();
   };
 }

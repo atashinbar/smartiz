@@ -1,8 +1,10 @@
 import type { OTPProvider } from "../types.js";
+import { generateOTP } from "./utils.js";
 
 export class MockOTPProvider implements OTPProvider {
-  async send(_phone: string, _code: string): Promise<boolean> {
-    console.log("[MockOTP] Code 123456 would be sent");
-    return true;
+  async send(phone: string): Promise<string> {
+    const code = generateOTP();
+    console.log(`[MockOTP] Phone: ${phone}, Code: ${code}`);
+    return code;
   }
 }
