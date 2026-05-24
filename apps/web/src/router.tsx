@@ -11,6 +11,7 @@ import { NotFoundPage } from "./pages/not-found.js";
 import { OfflinePage } from "./pages/offline.js";
 import { LoginPage } from "./pages/login.js";
 import { SkeletonPageLoader } from "./components/skeleton-page-loader.js";
+import { RequireAuth, RedirectIfAuth } from "./components/auth-guard.js";
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<SkeletonPageLoader />}>{children}</Suspense>;
@@ -23,11 +24,19 @@ export const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <AuthLayout />,
+    element: (
+      <RedirectIfAuth>
+        <AuthLayout />
+      </RedirectIfAuth>
+    ),
     children: [{ index: true, element: <LoginPage /> }],
   },
   {
-    element: <AppLayout />,
+    element: (
+      <RequireAuth>
+        <AppLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <SuspensePage><DashboardPage /></SuspensePage> },
       { path: "status", element: <SuspensePage><StatusDashboard /></SuspensePage> },

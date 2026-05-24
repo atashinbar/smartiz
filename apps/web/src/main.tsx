@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/query-client.js";
 import { PWAProvider } from "./providers/pwa-provider.js";
+import "./i18n/index.js";
 import "./index.css";
 import App from "./App.js";
 

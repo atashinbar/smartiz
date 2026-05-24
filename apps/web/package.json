@@ -13,8 +13,10 @@
     "@smartiz/shared": "workspace:*",
     "@smartiz/ui": "workspace:*",
     "@tanstack/react-query": "^5.100.10",
+    "i18next": "^26.2.0",
     "react": "^19",
     "react-dom": "^19",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^7.15.1",
     "zustand": "^5.0.13"
   },

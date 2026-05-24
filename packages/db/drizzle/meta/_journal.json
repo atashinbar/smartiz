@@ -8,6 +8,20 @@
       "when": 1778826915034,
       "tag": "0000_spooky_scrambler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779569412459,
+      "tag": "0001_mushy_wendigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779654863430,
+      "tag": "0002_condemned_mephisto",
+      "breakpoints": true
     }
   ]
 }
