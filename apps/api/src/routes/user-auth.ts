@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { eq, and, gt, sql, schema } from "@smartiz/db";
 import { signToken, hashOTP } from "@smartiz/auth";
-import { formatPhone, isValidPhone } from "@smartiz/shared";
+import { formatPhone, isValidPhone, OTP_EXPIRES_IN_SECONDS } from "@smartiz/shared";
 import type { AppVariables } from "../middleware/env.js";
 
 const { users, otp: otpTable } = schema;
@@ -52,15 +52,6 @@ export const userAuthRoutes = new Hono<{ Variables: AppVariables }>()
       if (existingNationalId) {
         return c.json({ status: "error", message: "This national ID is already registered" }, 409);
       }
-
-      await db.insert(users).values({
-        phone: normalized,
-        nationalId: nationalId.trim(),
-        userType,
-        isVerified: 0,
-        profileComplete: 0,
-        isActive: 1,
-      });
     }
 
     const now = new Date();
@@ -90,16 +81,17 @@ export const userAuthRoutes = new Hono<{ Variables: AppVariables }>()
     try {
       code = await otpProvider.send(normalized);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send OTP";
-      return c.json({ status: "error", message }, 502);
+      console.error("Failed to send OTP:", err);
+      return c.json({ status: "error", message: "Failed to send verification code" }, 502);
     }
     const codeHash = await hashOTP(code);
     const authenticationId = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 120 * 1000);
+    const expiresAt = new Date(Date.now() + OTP_EXPIRES_IN_SECONDS * 1000);
 
     await db.insert(otpTable).values({
       phone: normalized,
       type: "login",
+      nationalId: nationalId?.trim() ?? null,
       userType,
       codeHash,
       authenticationId,
@@ -108,7 +100,7 @@ export const userAuthRoutes = new Hono<{ Variables: AppVariables }>()
       maxAttempts: 3,
     });
 
-    return c.json({ status: "success", data: { authenticationId, expiresInSeconds: 120 } });
+    return c.json({ status: "success", data: { authenticationId, expiresInSeconds: OTP_EXPIRES_IN_SECONDS } });
   })
 
   .post("/verify-otp", async (c) => {
@@ -166,14 +158,33 @@ export const userAuthRoutes = new Hono<{ Variables: AppVariables }>()
 
     await db.delete(otpTable).where(eq(otpTable.id, otpRecord.id));
 
-    await db.update(users).set({ isVerified: 1, updatedAt: now }).where(eq(users.phone, normalized));
+    const [existingUser] = await db.select().from(users).where(eq(users.phone, normalized)).limit(1);
 
-    const [user] = await db.select().from(users).where(eq(users.phone, normalized)).limit(1);
+    let user;
+    if (existingUser) {
+      await db.update(users).set({ isVerified: 1, updatedAt: now }).where(eq(users.phone, normalized));
+      user = existingUser;
+    } else {
+      if (!otpRecord.nationalId) {
+        return c.json({ status: "error", message: "National ID is required for registration" }, 400);
+      }
+      const [newUser] = await db.insert(users).values({
+        phone: normalized,
+        nationalId: otpRecord.nationalId,
+        userType: otpRecord.userType,
+        isVerified: 1,
+        profileComplete: 0,
+        isActive: 1,
+      }).returning();
+      user = newUser;
+    }
 
-    if (!user) return c.json({ status: "error", message: "User not found" }, 404);
-
-    const secret = c.get("env").JWT_SECRET;
-    const token = await signToken({ id: user.id, userType: user.userType as "student" | "teacher" | "school_manager" }, secret, "30d");
+    const env = c.get("env");
+    const token = await signToken(
+      { id: user.id, userType: user.userType as "student" | "teacher" | "school_manager" },
+      env.JWT_SECRET,
+      env.JWT_EXPIRES_IN ?? "30d",
+    );
 
     return c.json({
       status: "success",

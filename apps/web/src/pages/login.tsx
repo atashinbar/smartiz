@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api.js'
 import { useAuthStore } from '../stores/auth.js'
 import {
@@ -23,6 +24,7 @@ type Step = 'phone' | 'national-id' | 'otp'
 export function LoginPage() {
 	const navigate = useNavigate()
 	const login = useAuthStore((s) => s.login)
+	const { t } = useTranslation()
 
 	const [step, setStep] = useState<Step>('phone')
 	const [phone, setPhone] = useState('')
@@ -58,7 +60,7 @@ export function LoginPage() {
 				setStep('national-id')
 			}
 		} catch (e: unknown) {
-			setError(e instanceof Error ? e.message : 'خطا در بررسی شماره')
+			setError(e instanceof Error ? e.message : t('login.checkPhoneError'))
 		} finally {
 			setLoading(false)
 		}
@@ -67,14 +69,14 @@ export function LoginPage() {
 	const handleSubmitNationalId = async () => {
 		setError('')
 		if (!nationalId.trim()) {
-			setError('کد ملی الزامی است')
+			setError(t('login.nationalIdRequired'))
 			return
 		}
 		setLoading(true)
 		try {
 			await sendOtp(nationalId.trim())
 		} catch (e: unknown) {
-			setError(e instanceof Error ? e.message : 'خطا در ثبت‌نام')
+			setError(e instanceof Error ? e.message : t('login.registerError'))
 		} finally {
 			setLoading(false)
 		}
@@ -102,7 +104,7 @@ export function LoginPage() {
 		try {
 			await sendOtp(nationalId || undefined)
 		} catch (e: unknown) {
-			setError(e instanceof Error ? e.message : 'خطا در ارسال مجدد کد')
+			setError(e instanceof Error ? e.message : t('login.resendError'))
 		} finally {
 			setLoading(false)
 		}
@@ -111,7 +113,7 @@ export function LoginPage() {
 	const handleVerifyOtp = async () => {
 		setError('')
 		if (!otpCode || otpCode.length < 6) {
-			setError('کد تایید ۶ رقمی را وارد کنید')
+			setError(t('login.enterCode'))
 			return
 		}
 		setLoading(true)
@@ -139,7 +141,7 @@ export function LoginPage() {
 				navigate('/', { replace: true })
 			}
 		} catch (e: unknown) {
-			const msg = e instanceof Error ? e.message : 'کد نامعتبر'
+			const msg = e instanceof Error ? e.message : t('login.invalidCode')
 			setError(msg)
 		} finally {
 			setLoading(false)
@@ -163,7 +165,7 @@ export function LoginPage() {
 						loading={loading}
 						onClick={handleSubmitPhone}
 						variant='outline'>
-						دریافت کد تایید
+						{t('login.getCode')}
 					</Button>
 				</div>
 			)
@@ -176,7 +178,7 @@ export function LoginPage() {
 						type='text'
 						inputMode='numeric'
 						dir='ltr'
-						placeholder='کد ملی'
+						placeholder={t('login.nationalIdPlaceholder')}
 						value={nationalId}
 						onChange={(e) => setNationalId(e.target.value)}
 						className='text-center text-lg'
@@ -187,7 +189,7 @@ export function LoginPage() {
 						size='lg'
 						loading={loading}
 						onClick={handleSubmitNationalId}>
-						ثبت‌نام و دریافت کد تایید
+						{t('login.registerAndGetCode')}
 					</Button>
 					<Button
 						variant='ghost'
@@ -196,7 +198,7 @@ export function LoginPage() {
 							setStep('phone')
 							setError('')
 						}}>
-						بازگشت
+						{t('login.back')}
 					</Button>
 				</div>
 			)
@@ -221,18 +223,18 @@ export function LoginPage() {
 					size='lg'
 					loading={loading}
 					onClick={handleVerifyOtp}>
-					تایید
+					{t('login.verify')}
 				</Button>
 				<div className='text-center text-sm text-muted-foreground'>
 					{countdown > 0 ? (
-						<span>ارسال مجدد تا {formatCountdown(countdown)}</span>
+						<span>{t('login.resendUntil', { time: formatCountdown(countdown) })}</span>
 					) : (
 						<Button
 							variant='link'
 							size='sm'
 							onClick={handleResendOtp}
 							loading={loading}>
-							ارسال مجدد کد تایید
+							{t('login.resendCode')}
 						</Button>
 					)}
 				</div>
@@ -244,7 +246,7 @@ export function LoginPage() {
 						setError('')
 						setCountdown(0)
 					}}>
-					تغییر شماره موبایل
+					{t('login.changePhone')}
 				</Button>
 			</div>
 		)
@@ -254,14 +256,14 @@ export function LoginPage() {
 		<Card className='border-0 shadow-none md:border md:shadow-sm'>
 			<CardHeader className='text-center'>
 				<CardTitle className='text-2xl'>
-					{step === 'phone' && 'ورود به اسمارتیز'}
-					{step === 'national-id' && 'ثبت‌نام'}
-					{step === 'otp' && 'تایید شماره موبایل'}
+					{step === 'phone' && t('login.title')}
+					{step === 'national-id' && t('login.registerTitle')}
+					{step === 'otp' && t('login.verifyTitle')}
 				</CardTitle>
 				<CardDescription>
-					{step === 'phone' && 'شماره موبایل خود را وارد کنید'}
-					{step === 'national-id' && 'کد ملی خود را وارد کنید'}
-					{step === 'otp' && `کد تایید ارسال شده به ${phone} را وارد کنید`}
+					{step === 'phone' && t('login.phonePlaceholder')}
+					{step === 'national-id' && t('login.enterNationalId')}
+					{step === 'otp' && t('login.verifyDescription', { phone })}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>

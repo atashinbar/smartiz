@@ -13,6 +13,7 @@ export const otp = pgTable(
     id: serial().primaryKey(),
     phone: text().notNull(),
     type: text().notNull(),
+    nationalId: text("national_id"),
     userType: text("user_type").notNull(),
     codeHash: text("code_hash").notNull(),
     authenticationId: text("authentication_id").notNull(),

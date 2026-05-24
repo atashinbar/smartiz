@@ -1,0 +1,24 @@
+{
+  "login": {
+    "title": "ورود به اسمارتیز",
+    "registerTitle": "ثبت‌نام",
+    "verifyTitle": "تایید شماره موبایل",
+    "phonePlaceholder": "شماره موبایل خود را وارد کنید",
+    "nationalIdPlaceholder": "کد ملی",
+    "getCode": "دریافت کد تایید",
+    "registerAndGetCode": "ثبت‌نام و دریافت کد تایید",
+    "verify": "تایید",
+    "back": "بازگشت",
+    "resendUntil": "ارسال مجدد تا {{time}}",
+    "resendCode": "ارسال مجدد کد تایید",
+    "changePhone": "تغییر شماره موبایل",
+    "enterCode": "کد تایید ۶ رقمی را وارد کنید",
+    "invalidCode": "کد نامعتبر",
+    "nationalIdRequired": "کد ملی الزامی است",
+    "checkPhoneError": "خطا در بررسی شماره",
+    "registerError": "خطا در ثبت‌نام",
+    "resendError": "خطا در ارسال مجدد کد",
+    "verifyDescription": "کد تایید ارسال شده به {{phone}} را وارد کنید",
+    "enterNationalId": "کد ملی خود را وارد کنید"
+  }
+}

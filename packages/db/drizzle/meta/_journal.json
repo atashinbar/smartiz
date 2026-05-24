@@ -15,6 +15,13 @@
       "when": 1779569412459,
       "tag": "0001_mushy_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779654863430,
+      "tag": "0002_condemned_mephisto",
+      "breakpoints": true
     }
   ]
 }
