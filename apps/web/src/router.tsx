@@ -10,8 +10,10 @@ import { ContentPage } from "./pages/content.js";
 import { NotFoundPage } from "./pages/not-found.js";
 import { OfflinePage } from "./pages/offline.js";
 import { LoginPage } from "./pages/login.js";
+import { ComingSoonPage } from "./pages/coming-soon.js";
 import { SkeletonPageLoader } from "./components/skeleton-page-loader.js";
 import { RequireAuth, RedirectIfAuth } from "./components/auth-guard.js";
+import { FeatureGate } from "./components/feature-gate.js";
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<SkeletonPageLoader />}>{children}</Suspense>;
@@ -41,8 +43,22 @@ export const router = createBrowserRouter([
       { index: true, element: <SuspensePage><DashboardPage /></SuspensePage> },
       { path: "status", element: <SuspensePage><StatusDashboard /></SuspensePage> },
       { path: "profile", element: <SuspensePage><ProfilePage /></SuspensePage> },
-      { path: "chat", element: <SuspensePage><ChatPage /></SuspensePage> },
-      { path: "content", element: <SuspensePage><ContentPage /></SuspensePage> },
+      {
+        path: "chat",
+        element: (
+          <FeatureGate feature="chat" fallback={<ComingSoonPage title="چت هوشمند" />}>
+            <SuspensePage><ChatPage /></SuspensePage>
+          </FeatureGate>
+        ),
+      },
+      {
+        path: "content",
+        element: (
+          <FeatureGate feature="contentManagement" fallback={<ComingSoonPage title="محتوا" />}>
+            <SuspensePage><ContentPage /></SuspensePage>
+          </FeatureGate>
+        ),
+      },
     ],
   },
   { path: "*", element: <NotFoundPage /> },
