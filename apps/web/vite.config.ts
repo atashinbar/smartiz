@@ -9,8 +9,7 @@ export default defineConfig({
 			registerType: 'prompt',
 			includeAssets: ['icons/*.png'],
 			devOptions: {
-				enabled: true,
-				type: 'module',
+				enabled: false,
 			},
 			manifest: {
 				name: 'اسمارتیز - پلتفرم آموزش هوشمند',
