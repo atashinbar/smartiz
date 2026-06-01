@@ -6,6 +6,9 @@ compatibility_flags = ["nodejs_compat"]
 [observability.logs]
 enabled = true
 
+[dev]
+port = 8585
+
 [vars]
 STORAGE_PROVIDER = "r2"
 OTP_PROVIDER = "meli-payamak"
@@ -14,11 +17,12 @@ CORS_ORIGINS = "*"
 
 # Hyperdrive: connects Workers to your external PostgreSQL database
 # 1. Go to Cloudflare Dashboard > Workers & Pages > Hyperdrive
-# 2. Create a config pointing to your PostgreSQL host
+# 2. Create a config pointing to your PostgreSQL host (direct connection, port 5432)
 # 3. Paste the ID below
-# [[hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = "<your-hyperdrive-config-id>"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "cf9b1867a21a46d59c3b50bbba41273b"
+localConnectionString = "postgresql://postgres.yceziopcamwcxzcgaynw:saZNGheQsAJDG6hJ@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 
 # R2 Binding (optional): native R2 access is more efficient than S3 API
 # To use native R2 bindings instead of S3-compatible access:

@@ -15,6 +15,7 @@ export default {
         R2_PUBLIC_URL: env.R2_PUBLIC_URL,
         JWT_SECRET: env.JWT_SECRET,
         OTP_PROVIDER: (env.OTP_PROVIDER as "mock" | "meli-payamak") || "mock",
+        MELI_PAYAMAK_API_KEY: env.MELI_PAYAMAK_API_KEY,
         NODE_ENV: (env.NODE_ENV as "development" | "production") || "production",
         CORS_ORIGINS: env.CORS_ORIGINS || "*",
       });

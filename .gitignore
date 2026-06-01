@@ -22,6 +22,8 @@ dist/
 .env
 .env.local
 .env.*.local
+.dev.vars
+apps/api/.wrangler/
 
 # IDE
 .vscode/
