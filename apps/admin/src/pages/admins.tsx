@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../hooks/use-auth.js";
+import { apiUrl } from "../lib/api-base.js";
 import {
   Button, Input, Tag, Card, Modal, Form, Select,
   Table, Dropdown, Alert, Space, Typography,
@@ -42,7 +43,7 @@ export function AdminsPage() {
   const fetchAdmins = async () => {
     setError("");
     try {
-      const res = await authFetch("/api/admin/admins");
+      const res = await authFetch(apiUrl("/admin/admins"));
       const data = await res.json();
       if (res.ok) {
         setAdmins(data.data);
@@ -87,13 +88,13 @@ export function AdminsPage() {
       if (editing) {
         const body: Record<string, string> = { name: values.name, role: values.role };
         if (values.password) body.password = values.password;
-        res = await authFetch(`/api/admin/admins/${editing.id}`, {
+        res = await authFetch(apiUrl(`/admin/admins/${editing.id}`), {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
       } else {
-        res = await authFetch("/api/admin/admins", {
+        res = await authFetch(apiUrl("/admin/admins"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(values),
@@ -115,7 +116,7 @@ export function AdminsPage() {
 
   const toggleActive = async (admin: Admin) => {
     try {
-      const res = await authFetch(`/api/admin/admins/${admin.id}/toggle`, { method: "PATCH" });
+      const res = await authFetch(apiUrl(`/admin/admins/${admin.id}/toggle`), { method: "PATCH" });
       if (!res.ok) {
         const data = await res.json();
         setError(data.message || "خطا در تغییر وضعیت");

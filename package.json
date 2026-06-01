@@ -12,6 +12,9 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v && docker compose up -d",
+    "deploy:api": "pnpm --filter @smartiz/api deploy",
+    "deploy:web": "pnpm --filter @smartiz/web build && wrangler pages deploy apps/web/dist --project-name=smartizapp-web",
+    "deploy:admin": "pnpm --filter @smartiz/admin build && wrangler pages deploy apps/admin/dist --project-name=smartizapp-admin",
     "prepare": "husky"
   },
   "devDependencies": {

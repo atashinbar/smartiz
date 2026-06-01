@@ -1,15 +1,29 @@
-name = "smartiz-api"
+name = "smartizapp-api"
 main = "src/entry-workers.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
+[observability.logs]
+enabled = true
+
 [vars]
 STORAGE_PROVIDER = "r2"
-OTP_PROVIDER = "mock"
+OTP_PROVIDER = "meli-payamak"
 NODE_ENV = "production"
 CORS_ORIGINS = "*"
 
-# Uncomment and configure after creating a Hyperdrive config:
+# Hyperdrive: connects Workers to your external PostgreSQL database
+# 1. Go to Cloudflare Dashboard > Workers & Pages > Hyperdrive
+# 2. Create a config pointing to your PostgreSQL host
+# 3. Paste the ID below
 # [[hyperdrive]]
 # binding = "HYPERDRIVE"
-# id = "<your-hyperdrive-id>"
+# id = "<your-hyperdrive-config-id>"
+
+# R2 Binding (optional): native R2 access is more efficient than S3 API
+# To use native R2 bindings instead of S3-compatible access:
+# 1. Create an R2 bucket in Cloudflare Dashboard
+# 2. Uncomment the section below
+# [[r2_buckets]]
+# binding = "R2_BUCKET"
+# bucket_name = "smartiz-uploads"
