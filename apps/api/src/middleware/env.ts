@@ -16,13 +16,13 @@ export interface AppVariables {
 }
 
 export function createEnvMiddleware(env: EnvConfig): MiddlewareHandler {
-  const db = createDb(env.DATABASE_URL);
   const storage = createStorage(mapStorageConfig(env));
   const otpProvider = createOTPProvider(env.OTP_PROVIDER, {
     MELI_PAYAMAK_API_KEY: env.MELI_PAYAMAK_API_KEY,
   });
 
   return async (c, next) => {
+    const db = createDb(env.DATABASE_URL);
     c.set("env", env);
     c.set("db", db);
     c.set("storage", storage);
