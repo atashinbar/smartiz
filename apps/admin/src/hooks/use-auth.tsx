@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { apiUrl } from "../lib/api-base.js";
 
 interface AdminData {
   id: number;
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch(apiUrl("/admin/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
